@@ -1,0 +1,5 @@
+# -*- coding: utf-8 -*-
+token = 'BOT_TOKEN'
+zabbix_login = 'login'
+zabbix_password = 'password'
+zabbix_url = 'http://zabbix.mydomain.ru/zabbix/api_jsonrpc.php'
