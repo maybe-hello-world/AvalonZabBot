@@ -1,13 +1,25 @@
 import telebot
-import config
 import json
+import time
 import requests
+import os
 
-bot = telebot.TeleBot(config.token)
+# Needed env variables:
+# zabbix_url - full URL to Zabbix api_jsonrpc.php file
+# zabbix_login - login of Zabbix API user
+# zabbix_password - password for Zabbix API user
+# telebot_token - token of Telegram bot
 
 #some startup procedures
 headers = {'Content-type': 'application/json'}
-auth_token = ''
+zabbix_url = os.environ['zabbix_url']
+zabbix_login = os.environ['zabbix_login']
+zabbix_password = os.environ['zabbix_password']
+telebot_token = os.environ['telebot_token']
+
+bot = telebot.TeleBot(telebot_token)
+#
+
 severity_dict = {
     0: "Not classified",
     1: "Information",
@@ -23,13 +35,13 @@ dataj = json.dumps({
     "method":"user.login",
     "params":
         {
-            "user": config.zabbix_login,
-            "password": config.zabbix_password
+            "user": zabbix_login,
+            "password": zabbix_password
         },
     "id": 1,
     "auth": None
     })
-r = requests.post(config.zabbix_url, data=dataj, headers=headers)
+r = requests.post(zabbix_url, data=dataj, headers=headers)
 auth_token = json.loads(r.text)['result']
 
 def get_host(id):
@@ -48,12 +60,12 @@ def get_host(id):
     "id": 1
     })
 
-    r = requests.post(config.zabbix_url, data=dataj, headers=headers)
+    r = requests.post(zabbix_url, data=dataj, headers=headers)
     r = json.loads(r.text)['result'][0]['host']
     return r
 
-@bot.message_handler(regexp="^.*@AvalonZabBot.*\/{0,1}alarm[s]{0,1}.*$")
-@bot.message_handler(commands = ["alarms"])
+@bot.message_handler(regexp="^.*@[A-Za-z0-9]+Bot.*\/{0,1}alarm[s]{0,1}.*$")
+@bot.message_handler(commands = ["alarm", "alarms"])
 def yell_alarms(message):
     dataj = json.dumps({
         "jsonrpc": "2.0",
@@ -80,16 +92,21 @@ def yell_alarms(message):
         "id": 1
     })
 
-    r = requests.post(config.zabbix_url,data = dataj, headers=headers)
+    r = requests.post(zabbix_url,data = dataj, headers=headers)
     r = json.loads(r.text)['result']
     if len(r) == 0:
         bot.send_message(message.chat.id, "No any alarms =)")
     else:
         for trigger in r:
-            ans = trigger['description'] + '\n' + severity_dict[int(trigger['priority'])]
+            ans = trigger['description'] + '\n' + "Severity: " + str.upper(severity_dict[int(trigger['priority'])])
             for host in trigger['hosts']:
                 ans += '\n' + get_host(host['hostid'])
             bot.send_message(message.chat.id, ans)
 
 if __name__ == '__main__':
-    bot.polling(none_stop=True)
+    while True:
+        try:
+            bot.polling(none_stop=True)
+        except:
+            time.sleep(5)
+            continue
