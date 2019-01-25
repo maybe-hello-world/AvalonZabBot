@@ -44,7 +44,7 @@ dataj = json.dumps({
 r = requests.post(zabbix_url, data=dataj, headers=headers)
 auth_token = json.loads(r.text)['result']
 
-def get_host(id):
+def get_host(id_):
     dataj = json.dumps({
     "jsonrpc": "2.0",
     "method": "host.get",
@@ -53,7 +53,7 @@ def get_host(id):
             "host"
         ],
         "filter": {
-            "hostid": id
+            "hostid": id_
         }
     },
     "auth": auth_token,
@@ -94,7 +94,7 @@ def yell_alarms(message):
 
     r = requests.post(zabbix_url,data = dataj, headers=headers)
     r = json.loads(r.text)['result']
-    if len(r) == 0:
+    if not len(r):
         bot.send_message(message.chat.id, "No any alarms =)")
     else:
         for trigger in r:
@@ -107,6 +107,8 @@ if __name__ == '__main__':
     while True:
         try:
             bot.polling(none_stop=True)
-        except:
+			
+		# Yes, i know what I'm doing
+        except BaseException:
             time.sleep(5)
             continue
