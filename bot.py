@@ -94,7 +94,7 @@ def yell_alarms(message):
 
     r = requests.post(zabbix_url,data = dataj, headers=headers)
     r = json.loads(r.text)['result']
-    if not len(r):
+    if not r:
         bot.send_message(message.chat.id, "No any alarms =)")
     else:
         for trigger in r:
